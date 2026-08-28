@@ -8,22 +8,22 @@ const siteUrl = 'https://printkit-studio.choppermoon1623.chatgpt.site';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: 'PrintKit Studio — 寸法からSTLをつくる',
-  description: '箱やケーブルクリップなど、3Dプリンタ向けの便利ガジェットをサイズ指定で生成。',
+  title: 'PrintKit Studio — A1 mini機構ジェネレーター',
+  description: 'Bambu Lab A1 mini向け。フィジェット、蝶番、歯車などの一体印刷機構を寸法指定でSTL生成。',
   alternates: { canonical: siteUrl },
   openGraph: {
     type: 'website',
     locale: 'ja_JP',
     url: siteUrl,
     siteName: 'PrintKit Studio',
-    title: 'PrintKit Studio — 寸法からSTLをつくる',
-    description: '箱やケーブルクリップなど、3Dプリンタ向けの便利ガジェットをサイズ指定で生成。',
-    images: [{ url: `${siteUrl}/og.png`, width: 1731, height: 909, alt: 'PrintKit Studioのガジェット設計イメージ' }],
+    title: 'PrintKit Studio — A1 mini機構ジェネレーター',
+    description: 'A1 miniの180 mmプレートに合わせ、フィジェットや一体型機構をその場でSTL生成。',
+    images: [{ url: `${siteUrl}/og.png`, width: 1731, height: 909, alt: 'PrintKit Studioの3Dプリント設計イメージ' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'PrintKit Studio — 寸法からSTLをつくる',
-    description: '寸法を入力して、3Dプリンタ用STLをその場で生成。',
+    title: 'PrintKit Studio — A1 mini機構ジェネレーター',
+    description: 'A1 mini向けの可動フィジェット・蝶番・歯車を寸法指定でSTL生成。',
     images: [`${siteUrl}/og.png`],
   },
 };
