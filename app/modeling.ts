@@ -1,4 +1,4 @@
-export type GadgetKind = 'box' | 'clip' | 'spacer' | 'wedge';
+export type GadgetKind = 'fidget-ring' | 'hinge' | 'gear-pair' | 'box' | 'clip' | 'spacer' | 'wedge';
 export type Vec3 = [number, number, number];
 export type Triangle = [Vec3, Vec3, Vec3];
 export type Parameters = Record<string, number>;
@@ -9,6 +9,7 @@ export type ParameterDefinition = {
   min: number;
   max: number;
   step?: number;
+  unit?: string;
 };
 
 export type GadgetDefinition = {
@@ -18,6 +19,9 @@ export type GadgetDefinition = {
   detail: string;
   description: string;
   orientation: string;
+  category: 'PRINT-IN-PLACE' | 'UTILITY';
+  printTip: string;
+  material: string;
   parameters: ParameterDefinition[];
   defaults: Parameters;
 };
@@ -32,13 +36,56 @@ export type Mesh = {
 
 export const gadgetDefinitions: GadgetDefinition[] = [
   {
+    id: 'fidget-ring', code: 'FJT', name: 'ネスト・スピナー', detail: '一体印刷の回転フィジェット',
+    description: 'すき間を空けた同心リングを一度に印刷。プレートから外したら、指でリングを回して遊べます。',
+    orientation: '平らな面を下', category: 'PRINT-IN-PLACE', material: 'PLA / PETG',
+    printTip: '初回はクリアランス0.45 mm、0.2 mm積層で試してください。',
+    parameters: [
+      { key: 'diameter', label: '外径', min: 38, max: 130 },
+      { key: 'rings', label: 'リング数', min: 2, max: 5, step: 1, unit: '個' },
+      { key: 'height', label: '厚さ', min: 4, max: 12, step: 0.5 },
+      { key: 'clearance', label: '可動すき間', min: 0.3, max: 0.8, step: 0.05 },
+    ],
+    defaults: { diameter: 72, rings: 4, height: 7, clearance: 0.45 },
+  },
+  {
+    id: 'hinge', code: 'HNG', name: '一体型ピボット蝶番', detail: 'ピン込みで一度に完成',
+    description: '縦ピンと交互のナックルを一体印刷する、平置きタイプの可動ジョイントです。',
+    orientation: '葉をプレートに平置き', category: 'PRINT-IN-PLACE', material: 'PLA / PETG',
+    printTip: '印刷後にゆっくり往復させ、固着した糸を切って可動させます。',
+    parameters: [
+      { key: 'leafLength', label: '片側長さ', min: 22, max: 70 },
+      { key: 'leafWidth', label: '葉の幅', min: 14, max: 38 },
+      { key: 'height', label: '蝶番高さ', min: 8, max: 24, step: 0.5 },
+      { key: 'pin', label: 'ピン径', min: 3, max: 8, step: 0.2 },
+      { key: 'clearance', label: '可動すき間', min: 0.3, max: 0.8, step: 0.05 },
+    ],
+    defaults: { leafLength: 38, leafWidth: 22, height: 14, pin: 4, clearance: 0.45 },
+  },
+  {
+    id: 'gear-pair', code: 'GRS', name: 'かみ合い歯車ペア', detail: '異なる歯数を一体配置',
+    description: 'モジュールと歯数から、すぐ回せる平歯車2枚を適切な中心距離で配置します。',
+    orientation: '歯車面を下', category: 'PRINT-IN-PLACE', material: 'PLA / PETG',
+    printTip: 'エレファントフット補正を有効にすると、歯元の固着を抑えやすくなります。',
+    parameters: [
+      { key: 'driveTeeth', label: '駆動側 歯数', min: 10, max: 30, step: 1, unit: 'T' },
+      { key: 'drivenTeeth', label: '従動側 歯数', min: 10, max: 42, step: 1, unit: 'T' },
+      { key: 'module', label: 'モジュール', min: 1.2, max: 3, step: 0.1, unit: 'MOD' },
+      { key: 'height', label: '歯車厚さ', min: 4, max: 12, step: 0.5 },
+      { key: 'bore', label: '軸穴径', min: 3, max: 12, step: 0.2 },
+      { key: 'clearance', label: 'かみ合い余裕', min: 0.2, max: 0.8, step: 0.05 },
+    ],
+    defaults: { driveTeeth: 14, drivenTeeth: 24, module: 2, height: 7, bore: 5, clearance: 0.35 },
+  },
+  {
     id: 'box', code: 'BOX', name: 'オープンボックス', detail: '収納・パーツ整理',
     description: '小物整理、治具、電子工作ケースに使える、上面が開いた丈夫な箱です。',
-    orientation: '底面を下',
+    orientation: '底面を下', category: 'UTILITY', material: 'PLA / PETG',
+    printTip: 'A1 miniでは外寸170 mm以下にするとプレート端に余裕ができます。',
     parameters: [
-      { key: 'width', label: '幅 W', min: 30, max: 300 },
-      { key: 'depth', label: '奥行 D', min: 30, max: 300 },
-      { key: 'height', label: '高さ H', min: 15, max: 200 },
+      { key: 'width', label: '幅 W', min: 30, max: 175 },
+      { key: 'depth', label: '奥行 D', min: 30, max: 175 },
+      { key: 'height', label: '高さ H', min: 15, max: 175 },
       { key: 'wall', label: '壁・底厚', min: 1.2, max: 8, step: 0.2 },
     ],
     defaults: { width: 120, depth: 80, height: 45, wall: 2.4 },
@@ -46,7 +93,8 @@ export const gadgetDefinitions: GadgetDefinition[] = [
   {
     id: 'clip', code: 'CLP', name: 'ケーブルクリップ', detail: '配線をすっきり固定',
     description: 'ケーブル径に合わせてパチッとはめる、横向き印刷のC型クリップです。',
-    orientation: '側面を下',
+    orientation: '側面を下', category: 'UTILITY', material: 'PETG推奨',
+    printTip: '繰り返し着脱する場合はPETGと0.2 mm積層がおすすめです。',
     parameters: [
       { key: 'diameter', label: 'ケーブル径', min: 2, max: 30, step: 0.2 },
       { key: 'thickness', label: '肉厚', min: 1.2, max: 6, step: 0.2 },
@@ -58,7 +106,8 @@ export const gadgetDefinitions: GadgetDefinition[] = [
   {
     id: 'spacer', code: 'SPC', name: 'スペーサー', detail: '内径・外径を指定',
     description: 'ネジ、棚、基板などの高さ調整に使える中空円筒スペーサーです。',
-    orientation: '円形面を下',
+    orientation: '円形面を下', category: 'UTILITY', material: 'PLA / PETG',
+    printTip: '軸穴が小さい場合は穴の水平拡張をスライサーで調整します。',
     parameters: [
       { key: 'inner', label: '内径', min: 1, max: 50, step: 0.2 },
       { key: 'outer', label: '外径', min: 4, max: 80, step: 0.2 },
@@ -69,7 +118,8 @@ export const gadgetDefinitions: GadgetDefinition[] = [
   {
     id: 'wedge', code: 'WDG', name: 'ドアストッパー', detail: '角度と高さを調整',
     description: '必要な高さに合わせられる、サポート材不要のシンプルなくさびです。',
-    orientation: '広い底面を下',
+    orientation: '広い底面を下', category: 'UTILITY', material: 'TPU / PETG',
+    printTip: '床の滑りを抑えるならTPU、硬さ優先ならPETGが向いています。',
     parameters: [
       { key: 'length', label: '長さ', min: 35, max: 180 },
       { key: 'width', label: '幅', min: 20, max: 100 },
@@ -81,6 +131,9 @@ export const gadgetDefinitions: GadgetDefinition[] = [
 
 export function buildGadget(kind: GadgetKind, p: Parameters): Mesh {
   switch (kind) {
+    case 'fidget-ring': return buildFidgetRing(p);
+    case 'hinge': return buildHinge(p);
+    case 'gear-pair': return buildGearPair(p);
     case 'box': return buildBox(p);
     case 'clip': return buildClip(p);
     case 'spacer': return buildSpacer(p);
@@ -93,7 +146,82 @@ export function validateGadget(kind: GadgetKind, p: Parameters): string | undefi
   if (kind === 'box' && (p.wall * 2 >= p.width || p.wall * 2 >= p.depth || p.wall >= p.height)) return '壁厚は幅・奥行きの半分未満、かつ高さ未満にしてください。';
   if (kind === 'spacer' && p.outer <= p.inner + 2.4) return '十分な強度のため、外径は内径より2.4 mm以上大きくしてください。';
   if (kind === 'clip' && p.thickness < 1.2) return 'クリップの肉厚は1.2 mm以上にしてください。';
+  if (kind === 'fidget-ring' && Math.round(p.rings) !== p.rings) return 'リング数は整数で指定してください。';
+  if (kind === 'gear-pair' && (Math.round(p.driveTeeth) !== p.driveTeeth || Math.round(p.drivenTeeth) !== p.drivenTeeth)) return '歯数は整数で指定してください。';
+  if (kind === 'gear-pair' && p.bore >= (Math.min(p.driveTeeth, p.drivenTeeth) - 2.5) * p.module) return '軸穴が歯元径に対して大きすぎます。';
+  if ((kind === 'fidget-ring' || kind === 'hinge' || kind === 'gear-pair') && p.clearance < 0.3) return 'A1 miniの0.4 mmノズルでは、可動すき間0.30 mm以上を推奨します。';
   return undefined;
+}
+
+function buildFidgetRing(p: Parameters): Mesh {
+  const outerRadius = p.diameter / 2;
+  const rings = Math.round(p.rings);
+  const centerRadius = Math.max(5, outerRadius * 0.18);
+  const available = outerRadius - centerRadius - p.clearance * rings;
+  const ringWidth = available / rings;
+  const triangles = cylinderZ(centerRadius, p.height, 0, 0, 80);
+  let inner = centerRadius + p.clearance;
+  for (let index = 0; index < rings; index++) {
+    const outer = inner + ringWidth;
+    triangles.push(...annularZ(inner, outer, p.height, 0, 0, 96));
+    inner = outer + p.clearance;
+  }
+  const solidArea = Math.PI * centerRadius * centerRadius + Math.PI * rings * ringWidth * (outerRadius + centerRadius);
+  return mesh(triangles, solidArea * p.height, `a1mini-nested-spinner-d${round(p.diameter)}-gap${round(p.clearance)}.stl`, [p.diameter, p.diameter, p.height]);
+}
+
+function buildHinge(p: Parameters): Mesh {
+  const pinRadius = p.pin / 2;
+  const sleeveInner = pinRadius + p.clearance;
+  const sleeveOuter = sleeveInner + Math.max(2.2, p.pin * 0.65);
+  const verticalGap = p.clearance;
+  const section = (p.height - verticalGap * 2) / 3;
+  const cx = p.leafLength + sleeveOuter + p.clearance;
+  const cy = p.leafWidth / 2;
+  const totalWidth = p.leafLength * 2 + sleeveOuter * 2 + p.clearance * 4;
+  const triangles: Triangle[] = [];
+
+  // Captive vertical pin and a small bridged head above the upper knuckle.
+  triangles.push(...cylinderZ(pinRadius, p.height + p.clearance + 0.8, cx, cy, 64));
+  triangles.push(...cylinderZ(pinRadius + 1.1, 0.8, cx, cy, 64, p.height + p.clearance));
+
+  // Fixed leaf: lower and upper knuckles.
+  triangles.push(...annularZ(sleeveInner, sleeveOuter, section, cx, cy, 72, 0));
+  triangles.push(...annularZ(sleeveInner, sleeveOuter, section, cx, cy, 72, section * 2 + verticalGap * 2));
+  triangles.push(...boxTriangles(0, 0, 0, p.leafLength, p.leafWidth, p.height));
+  triangles.push(...boxTriangles(p.leafLength - 0.6, cy - sleeveOuter * 0.7, 0, cx - sleeveOuter + 0.4, cy + sleeveOuter * 0.7, section));
+  triangles.push(...boxTriangles(p.leafLength - 0.6, cy - sleeveOuter * 0.7, section * 2 + verticalGap * 2, cx - sleeveOuter + 0.4, cy + sleeveOuter * 0.7, p.height));
+
+  // Moving leaf: middle knuckle, isolated vertically from the fixed knuckles.
+  const middleZ = section + verticalGap;
+  triangles.push(...annularZ(sleeveInner, sleeveOuter, section, cx, cy, 72, middleZ));
+  const rightStart = cx + sleeveOuter + p.clearance;
+  triangles.push(...boxTriangles(rightStart, 0, 0, totalWidth, p.leafWidth, p.height));
+  triangles.push(...boxTriangles(cx + sleeveOuter - 0.4, cy - sleeveOuter * 0.7, middleZ, rightStart + 0.6, cy + sleeveOuter * 0.7, middleZ + section));
+
+  const leafVolume = p.leafLength * p.leafWidth * p.height * 2;
+  const sleeveVolume = Math.PI * (sleeveOuter ** 2 - sleeveInner ** 2) * section * 3;
+  const pinVolume = Math.PI * pinRadius ** 2 * (p.height + p.clearance + 0.8);
+  return mesh(triangles, leafVolume + sleeveVolume + pinVolume, `a1mini-print-in-place-hinge-${round(totalWidth)}mm.stl`, [totalWidth, p.leafWidth, p.height + p.clearance + 0.8]);
+}
+
+function buildGearPair(p: Parameters): Mesh {
+  const driveTeeth = Math.round(p.driveTeeth);
+  const drivenTeeth = Math.round(p.drivenTeeth);
+  const pitchA = driveTeeth * p.module / 2;
+  const pitchB = drivenTeeth * p.module / 2;
+  const outerA = pitchA + p.module;
+  const outerB = pitchB + p.module;
+  const centerDistance = pitchA + pitchB + p.clearance;
+  const maxRadius = Math.max(outerA, outerB);
+  const centerA: [number, number] = [outerA, maxRadius];
+  const centerB: [number, number] = [outerA + centerDistance, maxRadius];
+  const triangles = gearRing(driveTeeth, p.module, p.bore / 2, p.height, centerA[0], centerA[1], 0);
+  triangles.push(...gearRing(drivenTeeth, p.module, p.bore / 2, p.height, centerB[0], centerB[1], Math.PI / drivenTeeth));
+  const dimensions: [number, number, number] = [outerA + centerDistance + outerB, maxRadius * 2, p.height];
+  const areaA = Math.PI * (pitchA ** 2 - (p.bore / 2) ** 2) * 1.08;
+  const areaB = Math.PI * (pitchB ** 2 - (p.bore / 2) ** 2) * 1.08;
+  return mesh(triangles, (areaA + areaB) * p.height, `a1mini-gear-pair-${driveTeeth}t-${drivenTeeth}t-m${round(p.module)}.stl`, dimensions);
 }
 
 function buildBox(p: Parameters): Mesh {
@@ -152,6 +280,87 @@ function buildWedge(p: Parameters): Mesh {
   addQuad(triangles, c, f, e, b);
   addQuad(triangles, a, d, f, c);
   return mesh(triangles, l * w * h / 2, `door-wedge-${round(l)}x${round(w)}x${round(h)}.stl`, [l, w, h]);
+}
+
+function cylinderZ(radius: number, height: number, cx: number, cy: number, segments: number, z0 = 0): Triangle[] {
+  const triangles: Triangle[] = [];
+  const bottomCenter: Vec3 = [cx, cy, z0];
+  const topCenter: Vec3 = [cx, cy, z0 + height];
+  for (let index = 0; index < segments; index++) {
+    const angle0 = Math.PI * 2 * index / segments;
+    const angle1 = Math.PI * 2 * (index + 1) / segments;
+    const b0: Vec3 = [cx + radius * Math.cos(angle0), cy + radius * Math.sin(angle0), z0];
+    const b1: Vec3 = [cx + radius * Math.cos(angle1), cy + radius * Math.sin(angle1), z0];
+    const t0: Vec3 = [b0[0], b0[1], z0 + height];
+    const t1: Vec3 = [b1[0], b1[1], z0 + height];
+    triangles.push([bottomCenter, b1, b0], [topCenter, t0, t1]);
+    addQuad(triangles, b0, b1, t1, t0);
+  }
+  return triangles;
+}
+
+function annularZ(inner: number, outer: number, height: number, cx: number, cy: number, segments: number, z0 = 0): Triangle[] {
+  const triangles: Triangle[] = [];
+  for (let index = 0; index < segments; index++) {
+    const angle0 = Math.PI * 2 * index / segments;
+    const angle1 = Math.PI * 2 * (index + 1) / segments;
+    const point = (radius: number, angle: number, z: number): Vec3 => [cx + radius * Math.cos(angle), cy + radius * Math.sin(angle), z];
+    const ob0 = point(outer, angle0, z0), ob1 = point(outer, angle1, z0);
+    const ot0 = point(outer, angle0, z0 + height), ot1 = point(outer, angle1, z0 + height);
+    const ib0 = point(inner, angle0, z0), ib1 = point(inner, angle1, z0);
+    const it0 = point(inner, angle0, z0 + height), it1 = point(inner, angle1, z0 + height);
+    addQuad(triangles, ob0, ob1, ot1, ot0);
+    addQuad(triangles, ib1, ib0, it0, it1);
+    addQuad(triangles, ib0, ib1, ob1, ob0);
+    addQuad(triangles, ot0, ot1, it1, it0);
+  }
+  return triangles;
+}
+
+function gearRing(teeth: number, moduleSize: number, boreRadius: number, height: number, cx: number, cy: number, rotation: number): Triangle[] {
+  const triangles: Triangle[] = [];
+  const pitchRadius = teeth * moduleSize / 2;
+  const tipRadius = pitchRadius + moduleSize;
+  const rootRadius = Math.max(boreRadius + 1.8, pitchRadius - moduleSize * 1.25);
+  const steps = teeth * 4;
+  const outerPoints: [number, number][] = [];
+  const innerPoints: [number, number][] = [];
+  for (let index = 0; index < steps; index++) {
+    const phase = index % 4;
+    const radius = phase === 1 || phase === 2 ? tipRadius : rootRadius;
+    const angle = rotation + Math.PI * 2 * index / steps;
+    outerPoints.push([cx + radius * Math.cos(angle), cy + radius * Math.sin(angle)]);
+    innerPoints.push([cx + boreRadius * Math.cos(angle), cy + boreRadius * Math.sin(angle)]);
+  }
+  for (let index = 0; index < steps; index++) {
+    const next = (index + 1) % steps;
+    const ob0: Vec3 = [outerPoints[index][0], outerPoints[index][1], 0];
+    const ob1: Vec3 = [outerPoints[next][0], outerPoints[next][1], 0];
+    const ot0: Vec3 = [outerPoints[index][0], outerPoints[index][1], height];
+    const ot1: Vec3 = [outerPoints[next][0], outerPoints[next][1], height];
+    const ib0: Vec3 = [innerPoints[index][0], innerPoints[index][1], 0];
+    const ib1: Vec3 = [innerPoints[next][0], innerPoints[next][1], 0];
+    const it0: Vec3 = [innerPoints[index][0], innerPoints[index][1], height];
+    const it1: Vec3 = [innerPoints[next][0], innerPoints[next][1], height];
+    addQuad(triangles, ob0, ob1, ot1, ot0);
+    addQuad(triangles, ib1, ib0, it0, it1);
+    addQuad(triangles, ib0, ib1, ob1, ob0);
+    addQuad(triangles, ot0, ot1, it1, it0);
+  }
+  return triangles;
+}
+
+function boxTriangles(x0: number, y0: number, z0: number, x1: number, y1: number, z1: number): Triangle[] {
+  const triangles: Triangle[] = [];
+  const a: Vec3 = [x0, y0, z0], b: Vec3 = [x1, y0, z0], c: Vec3 = [x1, y1, z0], d: Vec3 = [x0, y1, z0];
+  const e: Vec3 = [x0, y0, z1], f: Vec3 = [x1, y0, z1], g: Vec3 = [x1, y1, z1], h: Vec3 = [x0, y1, z1];
+  addQuad(triangles, a, d, c, b);
+  addQuad(triangles, e, f, g, h);
+  addQuad(triangles, a, b, f, e);
+  addQuad(triangles, b, c, g, f);
+  addQuad(triangles, c, d, h, g);
+  addQuad(triangles, d, a, e, h);
+  return triangles;
 }
 
 function annularExtrusion(inner: number, outer: number, width: number, start: number, end: number, segments: number, capEnds: boolean): Triangle[] {
