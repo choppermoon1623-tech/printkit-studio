@@ -1,4 +1,4 @@
-export type GadgetKind = 'fidget-ring' | 'hinge' | 'gear-pair' | 'box' | 'clip' | 'spacer' | 'wedge';
+export type GadgetKind = 'fidget-ring' | 'hinge' | 'gear-pair' | 'flexure' | 'living-hinge' | 'gripper' | 'box' | 'clip' | 'spacer' | 'wedge';
 export type Vec3 = [number, number, number];
 export type Triangle = [Vec3, Vec3, Vec3];
 export type Parameters = Record<string, number>;
@@ -78,6 +78,47 @@ export const gadgetDefinitions: GadgetDefinition[] = [
     defaults: { driveTeeth: 14, drivenTeeth: 24, module: 2, height: 7, bore: 5, clearance: 0.35 },
   },
   {
+    id: 'flexure', code: 'FLX', name: '4アーム・フレクサー', detail: 'しなる一体型フィジェット',
+    description: '中央ボタンを4本の斜めばねで保持。指で横へ押すと、弾性で戻るコンプライアント機構です。',
+    orientation: 'リング面を下', category: 'PRINT-IN-PLACE', material: 'PETG推奨',
+    printTip: '外周4周、インフィル100%にすると、ばねの感触が安定しやすくなります。',
+    parameters: [
+      { key: 'diameter', label: '外径', min: 46, max: 120 },
+      { key: 'travel', label: '可動スペース', min: 4, max: 12, step: 0.5 },
+      { key: 'beam', label: 'ばね幅', min: 0.8, max: 2.4, step: 0.1 },
+      { key: 'height', label: '厚さ', min: 3, max: 8, step: 0.5 },
+    ],
+    defaults: { diameter: 68, travel: 7, beam: 1.2, height: 4 },
+  },
+  {
+    id: 'living-hinge', code: 'LVH', name: 'リビングヒンジ帯', detail: '薄膜で曲がる連結パネル',
+    description: '複数パネルを薄い膜で連結。ケースの折り目や試作リンクに使える、組立不要の曲がる帯です。',
+    orientation: 'パネル面を下', category: 'PRINT-IN-PLACE', material: 'PETG / TPU',
+    printTip: 'フィラメントの流れが折り線を横切る向きで印刷し、最初はゆっくり曲げます。',
+    parameters: [
+      { key: 'panels', label: 'パネル数', min: 2, max: 7, step: 1, unit: '枚' },
+      { key: 'panelWidth', label: 'パネル幅', min: 14, max: 36 },
+      { key: 'length', label: '帯の長さ', min: 25, max: 90 },
+      { key: 'height', label: 'パネル厚', min: 2, max: 6, step: 0.5 },
+      { key: 'hinge', label: '薄膜厚', min: 0.6, max: 1.6, step: 0.1 },
+    ],
+    defaults: { panels: 4, panelWidth: 24, length: 48, height: 3, hinge: 0.8 },
+  },
+  {
+    id: 'gripper', code: 'GRP', name: 'フレックス・グリッパー', detail: '一体型のばねピンセット',
+    description: 'U字ばねと内向きの先端を一体印刷。つまむと閉じ、離すと戻る軽作業用グリッパーです。',
+    orientation: '広い面を下', category: 'PRINT-IN-PLACE', material: 'PETG推奨',
+    printTip: '積層方向に沿って無理に開かず、まず数回軽く握ってばねを慣らします。',
+    parameters: [
+      { key: 'length', label: '全長', min: 55, max: 160 },
+      { key: 'opening', label: '開口幅', min: 8, max: 30 },
+      { key: 'arm', label: 'アーム幅', min: 3, max: 8, step: 0.5 },
+      { key: 'height', label: '厚さ', min: 3, max: 9, step: 0.5 },
+      { key: 'tip', label: '先端長さ', min: 10, max: 32 },
+    ],
+    defaults: { length: 105, opening: 18, arm: 5, height: 5, tip: 20 },
+  },
+  {
     id: 'box', code: 'BOX', name: 'オープンボックス', detail: '収納・パーツ整理',
     description: '小物整理、治具、電子工作ケースに使える、上面が開いた丈夫な箱です。',
     orientation: '底面を下', category: 'UTILITY', material: 'PLA / PETG',
@@ -134,6 +175,9 @@ export function buildGadget(kind: GadgetKind, p: Parameters): Mesh {
     case 'fidget-ring': return buildFidgetRing(p);
     case 'hinge': return buildHinge(p);
     case 'gear-pair': return buildGearPair(p);
+    case 'flexure': return buildFlexure(p);
+    case 'living-hinge': return buildLivingHinge(p);
+    case 'gripper': return buildGripper(p);
     case 'box': return buildBox(p);
     case 'clip': return buildClip(p);
     case 'spacer': return buildSpacer(p);
@@ -147,6 +191,10 @@ export function validateGadget(kind: GadgetKind, p: Parameters): string | undefi
   if (kind === 'spacer' && p.outer <= p.inner + 2.4) return '十分な強度のため、外径は内径より2.4 mm以上大きくしてください。';
   if (kind === 'clip' && p.thickness < 1.2) return 'クリップの肉厚は1.2 mm以上にしてください。';
   if (kind === 'fidget-ring' && Math.round(p.rings) !== p.rings) return 'リング数は整数で指定してください。';
+  if (kind === 'living-hinge' && Math.round(p.panels) !== p.panels) return 'パネル数は整数で指定してください。';
+  if (kind === 'living-hinge' && p.hinge >= p.height) return '薄膜厚はパネル厚より小さくしてください。';
+  if (kind === 'flexure' && p.beam >= p.travel / 2) return 'ばね幅は可動スペースの半分未満にしてください。';
+  if (kind === 'gripper' && p.tip >= p.length / 2) return '先端長さは全長の半分未満にしてください。';
   if (kind === 'gear-pair' && (Math.round(p.driveTeeth) !== p.driveTeeth || Math.round(p.drivenTeeth) !== p.drivenTeeth)) return '歯数は整数で指定してください。';
   if (kind === 'gear-pair' && p.bore >= (Math.min(p.driveTeeth, p.drivenTeeth) - 2.5) * p.module) return '軸穴が歯元径に対して大きすぎます。';
   if ((kind === 'fidget-ring' || kind === 'hinge' || kind === 'gear-pair') && p.clearance < 0.3) return 'A1 miniの0.4 mmノズルでは、可動すき間0.30 mm以上を推奨します。';
@@ -222,6 +270,60 @@ function buildGearPair(p: Parameters): Mesh {
   const areaA = Math.PI * (pitchA ** 2 - (p.bore / 2) ** 2) * 1.08;
   const areaB = Math.PI * (pitchB ** 2 - (p.bore / 2) ** 2) * 1.08;
   return mesh(triangles, (areaA + areaB) * p.height, `a1mini-gear-pair-${driveTeeth}t-${drivenTeeth}t-m${round(p.module)}.stl`, dimensions);
+}
+
+function buildFlexure(p: Parameters): Mesh {
+  const outerRadius = p.diameter / 2;
+  const rim = Math.max(3.6, p.diameter * 0.065);
+  const ringInner = outerRadius - rim;
+  const discRadius = ringInner - p.travel;
+  const cx = outerRadius, cy = outerRadius;
+  const triangles = annularZ(ringInner, outerRadius, p.height, cx, cy, 96);
+  triangles.push(...cylinderZ(discRadius, p.height, cx, cy, 80));
+  for (let index = 0; index < 4; index++) {
+    const angle = Math.PI * 2 * index / 4;
+    const innerAngle = angle + 0.48;
+    const outerAngle = angle - 0.48;
+    const start: [number, number] = [cx + (discRadius - 0.5) * Math.cos(innerAngle), cy + (discRadius - 0.5) * Math.sin(innerAngle)];
+    const end: [number, number] = [cx + (ringInner + 0.5) * Math.cos(outerAngle), cy + (ringInner + 0.5) * Math.sin(outerAngle)];
+    triangles.push(...beamPrism(start[0], start[1], end[0], end[1], p.beam, p.height));
+  }
+  const ringArea = Math.PI * (outerRadius ** 2 - ringInner ** 2);
+  const discArea = Math.PI * discRadius ** 2;
+  const beamLength = Math.hypot(ringInner - discRadius, p.travel * 0.9);
+  return mesh(triangles, (ringArea + discArea + beamLength * p.beam * 4) * p.height, `a1mini-flexure-fidget-d${round(p.diameter)}.stl`, [p.diameter, p.diameter, p.height]);
+}
+
+function buildLivingHinge(p: Parameters): Mesh {
+  const panels = Math.round(p.panels);
+  const gap = 1.2;
+  const totalWidth = panels * p.panelWidth + (panels - 1) * gap;
+  const triangles: Triangle[] = [];
+  for (let index = 0; index < panels; index++) {
+    const x0 = index * (p.panelWidth + gap);
+    triangles.push(...boxTriangles(x0, 0, 0, x0 + p.panelWidth, p.length, p.height));
+    if (index < panels - 1) {
+      const jointStart = x0 + p.panelWidth - 0.6;
+      triangles.push(...boxTriangles(jointStart, 0, 0, jointStart + gap + 1.2, p.length, p.hinge));
+    }
+  }
+  const panelVolume = panels * p.panelWidth * p.length * p.height;
+  const hingeVolume = (panels - 1) * (gap + 1.2) * p.length * p.hinge;
+  return mesh(triangles, panelVolume + hingeVolume, `a1mini-living-hinge-${panels}panel.stl`, [totalWidth, p.length, p.height]);
+}
+
+function buildGripper(p: Parameters): Mesh {
+  const totalWidth = p.opening + p.arm * 2;
+  const baseLength = Math.max(12, p.arm * 2.4);
+  const tipReach = p.opening * 0.36;
+  const triangles: Triangle[] = [];
+  triangles.push(...boxTriangles(0, 0, 0, baseLength, totalWidth, p.height));
+  triangles.push(...boxTriangles(baseLength - 0.6, 0, 0, p.length, p.arm, p.height));
+  triangles.push(...boxTriangles(baseLength - 0.6, p.arm + p.opening, 0, p.length, totalWidth, p.height));
+  triangles.push(...boxTriangles(p.length - p.tip, p.arm - 0.2, 0, p.length, p.arm + tipReach, p.height));
+  triangles.push(...boxTriangles(p.length - p.tip, p.arm + p.opening - tipReach, 0, p.length, p.arm + p.opening + 0.2, p.height));
+  const volume = baseLength * totalWidth * p.height + (p.length - baseLength) * p.arm * p.height * 2 + p.tip * tipReach * p.height * 2;
+  return mesh(triangles, volume, `a1mini-flex-gripper-${round(p.length)}mm.stl`, [p.length, totalWidth, p.height]);
 }
 
 function buildBox(p: Parameters): Mesh {
@@ -347,6 +449,18 @@ function gearRing(teeth: number, moduleSize: number, boreRadius: number, height:
     addQuad(triangles, ib0, ib1, ob1, ob0);
     addQuad(triangles, ot0, ot1, it1, it0);
   }
+  return triangles;
+}
+
+function beamPrism(x0: number, y0: number, x1: number, y1: number, width: number, height: number): Triangle[] {
+  const length = Math.hypot(x1 - x0, y1 - y0) || 1;
+  const px = -(y1 - y0) / length * width / 2;
+  const py = (x1 - x0) / length * width / 2;
+  const points: [number, number][] = [[x0 + px, y0 + py], [x1 + px, y1 + py], [x1 - px, y1 - py], [x0 - px, y0 - py]];
+  const bottom = points.map(([x, y]) => [x, y, 0] as Vec3);
+  const top = points.map(([x, y]) => [x, y, height] as Vec3);
+  const triangles: Triangle[] = [[bottom[0], bottom[2], bottom[1]], [bottom[0], bottom[3], bottom[2]], [top[0], top[1], top[2]], [top[0], top[2], top[3]]];
+  for (let index = 0; index < 4; index++) addQuad(triangles, bottom[index], bottom[(index + 1) % 4], top[(index + 1) % 4], top[index]);
   return triangles;
 }
 
