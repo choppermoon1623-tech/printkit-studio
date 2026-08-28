@@ -16,9 +16,12 @@ const initialValues = Object.fromEntries(
   gadgetDefinitions.map((definition) => [definition.id, { ...definition.defaults }]),
 ) as Record<GadgetKind, Parameters>;
 
+const clearanceByNozzle: Record<string, number> = { '0.2': 0.3, '0.4': 0.4, '0.6': 0.55, '0.8': 0.7 };
+
 export default function Home() {
-  const [selected, setSelected] = useState<GadgetKind>('box');
+  const [selected, setSelected] = useState<GadgetKind>('fidget-ring');
   const [values, setValues] = useState(initialValues);
+  const [nozzle, setNozzle] = useState('0.4');
   const [downloaded, setDownloaded] = useState(false);
   const definition = gadgetDefinitions.find((item) => item.id === selected)!;
   const parameters = values[selected];
@@ -26,7 +29,9 @@ export default function Home() {
   const model = useMemo(() => buildGadget(selected, parameters), [selected, parameters]);
   const grams = Math.max(1, Math.round(model.volumeMm3 / 1000 * 1.24));
   const printMinutes = Math.max(12, Math.round(model.volumeMm3 / 1000 * 4.2 + 18));
-  const bedWarning = Math.max(...model.dimensions) > 220;
+  const bedWarning = model.dimensions.some((dimension) => dimension > 180);
+  const plateUse = Math.round(Math.max(model.dimensions[0], model.dimensions[1]) / 180 * 100);
+  const motionWarning = definition.category === 'PRINT-IN-PLACE' && parameters.clearance < clearanceByNozzle[nozzle];
 
   function updateParameter(key: string, value: number) {
     setValues((current) => ({
@@ -57,23 +62,31 @@ export default function Home() {
           <span className="brand-mark">P</span>
           <span>PRINTKIT <b>STUDIO</b></span>
         </a>
-        <div className="topbar-copy">寸法から、すぐ印刷できる形へ。</div>
-        <div className="unit-chip">単位 <strong>mm</strong></div>
+        <div className="topbar-copy">A1 miniの造形範囲に、ぴったり収める。</div>
+        <div className="unit-chip">A1 MINI <strong>180³</strong></div>
       </header>
 
       <section className="intro" id="top">
         <div>
-          <p className="eyebrow">PARAMETRIC GADGET MAKER / BETA</p>
-          <h1>欲しいサイズで、<br />便利なものをつくる。</h1>
+          <p className="eyebrow">A1 MINI PARAMETRIC MECHANISM LAB / BETA</p>
+          <h1>A1 miniで、<br />動くものをつくる。</h1>
         </div>
         <p className="intro-copy">
-          テンプレートを選び、寸法を入力するだけ。<br />3Dプリンタ用STLをその場で生成します。
+          180 mm角のプレートに収まる寸法を確認しながら、<br />3Dプリンタ用STLをその場で生成します。
         </p>
+      </section>
+
+      <section className="machine-strip" aria-label="A1 miniプロファイル">
+        <div className="machine-name"><span>A1</span><div><b>Bambu Lab A1 mini</b><small>ACTIVE MACHINE PROFILE</small></div></div>
+        <div className="machine-stat"><small>造形範囲</small><b>180 × 180 × 180 mm</b></div>
+        <label className="nozzle-select"><small>ノズル</small><select value={nozzle} onChange={(event) => setNozzle(event.target.value)} aria-label="A1 miniのノズル径"><option value="0.2">0.2 mm</option><option value="0.4">0.4 mm / 標準</option><option value="0.6">0.6 mm</option><option value="0.8">0.8 mm</option></select></label>
+        <div className="machine-stat"><small>推奨可動すき間</small><b>{clearanceByNozzle[nozzle]} mm〜</b></div>
+        <a className="spec-link" href="https://www.bambulab.com/en/a1-mini/tech-specs" target="_blank" rel="noreferrer">公式仕様 ↗</a>
       </section>
 
       <section className="workspace" aria-label="STLモデル作成ワークスペース">
         <aside className="catalog-panel">
-          <PanelHeading number="01" title="形を選ぶ" caption="GADGET LIBRARY" />
+          <PanelHeading number="01" title="機構を選ぶ" caption="A1 MINI LIBRARY" />
           <div className="gadget-list">
             {gadgetDefinitions.map((gadget) => (
               <button
@@ -83,12 +96,12 @@ export default function Home() {
                 type="button"
               >
                 <span className="gadget-code">{gadget.code}</span>
-                <span><b>{gadget.name}</b><small>{gadget.detail}</small></span>
+                <span><i>{gadget.category === 'PRINT-IN-PLACE' ? '一体印刷' : '便利ツール'}</i><b>{gadget.name}</b><small>{gadget.detail}</small></span>
                 <span className="arrow">↗</span>
               </button>
             ))}
           </div>
-          <p className="catalog-note"><span>TIP</span> すべてサポート材なしで印刷しやすい向きに設計しています。</p>
+          <p className="catalog-note"><span>A1 MINI</span> 可動モデルは標準0.4 mmノズルと0.2 mm積層を基準にしています。</p>
         </aside>
 
         <section className="preview-panel" aria-label="モデルプレビュー">
@@ -101,13 +114,14 @@ export default function Home() {
             <span><small>推定材料</small><b>約 {grams} g</b></span>
             <span><small>目安時間</small><b>約 {formatTime(printMinutes)}</b></span>
             <span><small>出力方向</small><b>{definition.orientation}</b></span>
+            <span><small>プレート使用率</small><b>{plateUse}%</b></span>
           </div>
         </section>
 
         <aside className="settings-panel">
           <PanelHeading number="02" title="寸法を決める" caption="PARAMETERS" />
           <div className="model-title">
-            <small>選択中 / {definition.code}</small>
+            <small>選択中 / {definition.code} / {definition.category}</small>
             <strong>{definition.name}</strong>
             <p>{definition.description}</p>
           </div>
@@ -120,20 +134,23 @@ export default function Home() {
                 min={parameter.min}
                 max={parameter.max}
                 step={parameter.step}
+                unit={parameter.unit}
                 onChange={(value) => updateParameter(parameter.key, value)}
               />
             ))}
           </div>
 
-          <div className={`print-check ${error || bedWarning ? 'warning' : ''}`} role="status">
-            <span>{error ? '!' : bedWarning ? '△' : '✓'}</span>
+          <div className={`print-check ${error || bedWarning || motionWarning ? 'warning' : ''}`} role="status">
+            <span>{error ? '!' : bedWarning || motionWarning ? '△' : '✓'}</span>
             <p>
-              <b>{error ? '寸法を確認してください' : bedWarning ? '大型プリンタ向けです' : '印刷可能な形状です'}</b>
-              <small>{error ?? (bedWarning ? '最大寸法が一般的な220 mmベッドを超えています' : `${model.triangles.length}面の閉じたSTLモデルを生成します`)}</small>
+              <b>{error ? '寸法を確認してください' : bedWarning ? 'A1 miniの範囲外です' : motionWarning ? '可動すき間が小さめです' : 'A1 miniに収まります'}</b>
+              <small>{error ?? (bedWarning ? '幅・奥行き・高さのいずれかが180 mmを超えています' : motionWarning ? `${nozzle} mmノズルでは${clearanceByNozzle[nozzle]} mm以上を推奨します` : `${model.dimensions.map((value) => roundDisplay(value)).join(' × ')} mm / ${model.triangles.length}面`)}</small>
             </p>
           </div>
 
-          <button className="generate-button" type="button" onClick={downloadModel} disabled={Boolean(error)}>
+          <div className="print-recipe"><span>PRINT RECIPE</span><p><b>{definition.material}</b><small>{definition.printTip}</small></p></div>
+
+          <button className="generate-button" type="button" onClick={downloadModel} disabled={Boolean(error || bedWarning)}>
             <span>STLを生成・保存</span><small>MODEL &amp; DOWNLOAD</small><b>↓</b>
           </button>
           <p className="fine-print">生成処理はすべて端末内。寸法やモデルデータは外部へ送信されません。</p>
@@ -141,12 +158,12 @@ export default function Home() {
       </section>
 
       <section className="print-notes" aria-label="印刷のヒント">
-        <article><span>01 / TOLERANCE</span><b>はめ込みには余裕を</b><p>実物に被せる部品は、測った寸法に0.2〜0.4 mmを足すのが目安です。</p></article>
-        <article><span>02 / STRENGTH</span><b>壁3周以上がおすすめ</b><p>0.4 mmノズルなら、肉厚1.2 mm以上で日用品として扱いやすくなります。</p></article>
-        <article><span>03 / SLICER</span><b>STLを必ず確認</b><p>スライサーで向き、充填率、サポート、ベッドとの収まりを確認してから印刷してください。</p></article>
+        <article><span>01 / A1 MINI PRESET</span><b>0.4 mmノズル・0.2 mm積層</b><p>一体機構の最初の試作は標準ノズル、標準レイヤー、PLAで始めるのがおすすめです。</p></article>
+        <article><span>02 / RELEASE</span><b>印刷後は少しずつ慣らす</b><p>可動部を無理にひねらず、小さく往復させて糸引きやエレファントフットの固着を外します。</p></article>
+        <article><span>03 / BAMBU STUDIO</span><b>サポートOFFで配置確認</b><p>STLを読み込み、A1 miniプロファイル・造形方向・初層を確認してからプリントしてください。</p></article>
       </section>
 
-      <footer><b>PRINTKIT STUDIO</b><span>MAKE THE RIGHT-SIZED THING.</span><span>STL / MILLIMETERS / LOCAL ONLY</span></footer>
+      <footer><b>PRINTKIT STUDIO / A1 MINI LAB</b><span>PRINT IT. FREE IT. MOVE IT.</span><span>180³ / STL / LOCAL ONLY</span></footer>
       {downloaded && <div className="download-toast" role="status"><b>STLを保存しました</b><span>{model.filename}</span></div>}
     </main>
   );
@@ -156,13 +173,13 @@ function PanelHeading({ number, title, caption }: { number: string; title: strin
   return <div className="panel-heading"><span>{number}</span><div><b>{title}</b><small>{caption}</small></div></div>;
 }
 
-function Measure({ label, value, min, max, step = 1, onChange }: {
-  label: string; value: number; min: number; max: number; step?: number; onChange: (value: number) => void;
+function Measure({ label, value, min, max, step = 1, unit = 'mm', onChange }: {
+  label: string; value: number; min: number; max: number; step?: number; unit?: string; onChange: (value: number) => void;
 }) {
   return (
     <label className="measure-field">
       <span>{label}</span>
-      <div><input aria-label={label} type="number" value={value} min={min} max={max} step={step} onChange={(event) => onChange(Number(event.target.value))} /><b>mm</b></div>
+      <div><input aria-label={label} type="number" value={value} min={min} max={max} step={step} onChange={(event) => onChange(Number(event.target.value))} /><b>{unit}</b></div>
     </label>
   );
 }
@@ -262,5 +279,9 @@ function drawMesh(canvas: HTMLCanvasElement, triangles: Triangle[], yaw: number,
 function formatTime(minutes: number) {
   if (minutes < 60) return `${minutes}分`;
   return `${Math.floor(minutes / 60)}時間${minutes % 60}分`;
+}
+
+function roundDisplay(value: number) {
+  return Number(value.toFixed(1));
 }
 
